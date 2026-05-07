@@ -53,7 +53,15 @@ function Dashboard() {
           <h1>SignalKit</h1>
           <p>Feedback, outcome, and reward signals decoded from compact SDK batches.</p>
         </div>
-        <button onClick={() => void refresh()}>Refresh</button>
+        <div className="headerActions">
+          <a href={`${api}/v1/export.json`} download>
+            Export JSON
+          </a>
+          <a href={`${api}/v1/export.jsonl`} download>
+            Export JSONL
+          </a>
+          <button onClick={() => void refresh()}>Refresh</button>
+        </div>
       </header>
 
       <section className="metrics">
@@ -135,6 +143,21 @@ function Dashboard() {
             analytics can read normal JSON again.
           </p>
           <code>{"fb -> feedback, as -> agent_step, oc -> outcome"}</code>
+          <div className="exportBox">
+            <h2>Developer-owned export</h2>
+            <p>
+              JSON is convenient for app scripts and inspection. JSONL is better for datasets,
+              warehouse imports, eval pipelines, and fine-tuning preparation.
+            </p>
+            <div className="exportLinks">
+              <a href={`${api}/v1/export.json`} download>
+                Download JSON
+              </a>
+              <a href={`${api}/v1/export.jsonl`} download>
+                Download JSONL
+              </a>
+            </div>
+          </div>
         </div>
       </section>
     </main>

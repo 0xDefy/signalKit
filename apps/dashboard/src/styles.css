@@ -47,7 +47,8 @@ p {
   color: #59645f;
 }
 
-button {
+button,
+a {
   border: 1px solid #27382f;
   background: #27382f;
   color: white;
@@ -55,6 +56,18 @@ button {
   padding: 0 16px;
   border-radius: 7px;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.headerActions,
+.exportLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
 }
 
 .metrics,
@@ -204,6 +217,21 @@ code {
   margin-top: 14px;
 }
 
+.exportBox {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid #edf0ea;
+}
+
+.exportBox p {
+  margin-top: 8px;
+}
+
+.exportLinks {
+  justify-content: flex-start;
+  margin-top: 12px;
+}
+
 .empty {
   padding: 14px;
   border: 1px dashed #d8ddd2;
@@ -226,5 +254,9 @@ code {
   .topbar {
     display: grid;
     align-items: start;
+  }
+
+  .headerActions {
+    justify-content: flex-start;
   }
 }

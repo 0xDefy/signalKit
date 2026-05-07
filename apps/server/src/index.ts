@@ -43,6 +43,26 @@ app.get("/v1/events", async () => ({
   events: events.slice(-100).reverse()
 }));
 
+app.get("/v1/export.json", async (_request, reply) => {
+  return reply
+    .header("content-type", "application/json; charset=utf-8")
+    .header("content-disposition", `attachment; filename="${createExportName("json")}"`)
+    .send({
+      v: 1,
+      exportedAt: new Date().toISOString(),
+      count: events.length,
+      events
+    });
+});
+
+app.get("/v1/export.jsonl", async (_request, reply) => {
+  const body = events.map((event) => JSON.stringify(event)).join("\n");
+  return reply
+    .header("content-type", "application/x-ndjson; charset=utf-8")
+    .header("content-disposition", `attachment; filename="${createExportName("jsonl")}"`)
+    .send(body ? `${body}\n` : "");
+});
+
 app.get("/v1/stats", async () => {
   const eventsByType: Record<string, number> = {};
   const rewardTotals: Record<string, { total: number; count: number }> = {};
@@ -76,7 +96,7 @@ app.get("/v1/stats", async () => {
   };
 });
 
-const port = 8787;
+const port = Number(process.env.PORT ?? 8787);
 await app.listen({ port, host: "::" });
 
 async function loadExistingEvents(): Promise<void> {
@@ -108,4 +128,9 @@ function isValidEvent(event: unknown): event is StoredEvent {
     Boolean(candidate.payload) &&
     typeof candidate.payload === "object"
   );
+}
+
+function createExportName(extension: "json" | "jsonl"): string {
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+  return `signalkit-events-${stamp}.${extension}`;
 }

@@ -25,6 +25,15 @@ Default URLs:
 - Dashboard: `http://localhost:5174`
 - Example React app: `http://localhost:5173`
 
+## Export Data
+
+The MVP server keeps developer-owned data easy to pull out:
+
+- `GET http://localhost:8787/v1/export.json` downloads all decoded events as one JSON document.
+- `GET http://localhost:8787/v1/export.jsonl` downloads all decoded events as JSONL for datasets, warehouses, eval pipelines, or fine-tuning prep.
+
+The dashboard also has JSON and JSONL export buttons.
+
 ## Packages
 
 - `@signalkit/core`: SDK client, plugin system, queue, privacy scrubber, compact/readable encoding, decoder, custom transport interface.
