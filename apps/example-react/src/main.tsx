@@ -1,13 +1,14 @@
 import { SignalKit, type EncodedBatch, type SignalKitClient } from "@signalkit/core";
 import { agentPlugin, type AgentApi } from "@signalkit/plugin-agent";
 import { feedbackPlugin, type FeedbackApi } from "@signalkit/plugin-feedback";
+import { gamePlugin, type GameApi } from "@signalkit/plugin-game";
 import { outcomePlugin, type OutcomeApi } from "@signalkit/plugin-outcome";
 import { fetchTransport } from "@signalkit/transport-fetch";
 import { useMemo, useState, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import "./styles.css";
 
-type Signal = SignalKitClient & FeedbackApi & AgentApi & OutcomeApi;
+type Signal = SignalKitClient & FeedbackApi & AgentApi & OutcomeApi & GameApi;
 type PrivacyMode = "metadata_only" | "allow_content" | "strict";
 type SchemaMode = "compact" | "readable";
 
@@ -22,7 +23,7 @@ type Scenario = {
   id: string;
   title: string;
   description: string;
-  eventType: "feedback" | "agent" | "outcome";
+  eventType: "feedback" | "agent" | "outcome" | "game";
   reward: string;
   run(signal: Signal): void;
 };
@@ -146,6 +147,62 @@ const scenarios: Scenario[] = [
         metadata: { durationMs: 8000, stepCount: 1 }
       });
     }
+  },
+  {
+    id: "game-action",
+    title: "Game action outcome",
+    description: "Semantic gameplay action without pointer trails or screen replay.",
+    eventType: "game",
+    reward: "-0.20",
+    run(signal) {
+      signal.game.action({
+        playerId: "player_123",
+        taskId: "level_2_attempt_4",
+        action: "jump",
+        target: "moving_platform",
+        outcome: "failure",
+        reward: -0.2,
+        metadata: { level: "level_2", attempt: 4, distanceToTarget: 12 }
+      });
+    }
+  },
+  {
+    id: "game-level",
+    title: "Level completed",
+    description: "A compact level outcome for balancing, evals, or progression tuning.",
+    eventType: "game",
+    reward: "1.00",
+    run(signal) {
+      signal.game.level({
+        playerId: "player_123",
+        level: "level_2",
+        attempt: 5,
+        outcome: "completed",
+        reward: 1,
+        metadata: { durationMs: 92000, deaths: 4, difficulty: "normal" }
+      });
+    }
+  },
+  {
+    id: "game-input-summary",
+    title: "Input summary window",
+    description: "Counts taps, drags, and misclicks over a window without raw coordinates.",
+    eventType: "game",
+    reward: "n/a",
+    run(signal) {
+      signal.game.inputSummary({
+        playerId: "player_123",
+        taskId: "level_2_attempt_5",
+        windowMs: 10000,
+        taps: 18,
+        doubleTaps: 3,
+        longPresses: 1,
+        drags: 4,
+        misclicks: 2,
+        rageClicks: 1,
+        metadata: { level: "level_2", device: "touch" }
+      });
+    }
   }
 ];
 
@@ -167,7 +224,7 @@ function createSignal(options: {
     flushIntervalMs: 0,
     maxBatchSize: 20,
     maxQueueSize: 100,
-    plugins: [feedbackPlugin(), agentPlugin(), outcomePlugin()],
+    plugins: [feedbackPlugin(), agentPlugin(), outcomePlugin(), gamePlugin()],
     transport: {
       async send(batch) {
         options.onBatch(batch);

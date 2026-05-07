@@ -51,6 +51,9 @@ importers:
       '@signalkit/plugin-feedback':
         specifier: workspace:*
         version: link:../../packages/plugin-feedback
+      '@signalkit/plugin-game':
+        specifier: workspace:*
+        version: link:../../packages/plugin-game
       '@signalkit/plugin-outcome':
         specifier: workspace:*
         version: link:../../packages/plugin-outcome
@@ -115,6 +118,15 @@ importers:
         version: 5.9.3
 
   packages/plugin-feedback:
+    devDependencies:
+      '@signalkit/core':
+        specifier: workspace:*
+        version: link:../core
+      typescript:
+        specifier: ^5.4.5
+        version: 5.9.3
+
+  packages/plugin-game:
     devDependencies:
       '@signalkit/core':
         specifier: workspace:*

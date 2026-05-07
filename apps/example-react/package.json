@@ -12,6 +12,7 @@
     "@signalkit/core": "workspace:*",
     "@signalkit/plugin-agent": "workspace:*",
     "@signalkit/plugin-feedback": "workspace:*",
+    "@signalkit/plugin-game": "workspace:*",
     "@signalkit/plugin-outcome": "workspace:*",
     "@signalkit/transport-fetch": "workspace:*",
     "@vitejs/plugin-react": "^4.2.1",

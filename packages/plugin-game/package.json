@@ -1,0 +1,29 @@
+{
+  "name": "@signalkit/plugin-game",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "peerDependencies": {
+    "@signalkit/core": "^0.1.0"
+  },
+  "devDependencies": {
+    "@signalkit/core": "workspace:*",
+    "typescript": "^5.4.5"
+  }
+}

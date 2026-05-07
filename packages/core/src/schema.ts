@@ -2,6 +2,9 @@ export const EVENT_TYPE_CODES: Record<string, string> = {
   feedback: "fb",
   agent_step: "as",
   outcome: "oc",
+  game_action: "ga",
+  game_level: "gl",
+  game_input_summary: "gi",
   custom: "cu"
 };
 

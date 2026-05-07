@@ -40,6 +40,7 @@ The dashboard also has JSON and JSONL export buttons.
 - `@signalkit/plugin-feedback`: `signal.feedback.record(...)`.
 - `@signalkit/plugin-agent`: `signal.agent.step(...)`.
 - `@signalkit/plugin-outcome`: `signal.outcome.record(...)`.
+- `@signalkit/plugin-game`: optional semantic gameplay outcomes and input summaries.
 - `@signalkit/transport-fetch`: small fetch transport for hosted or self-hosted ingest endpoints.
 - `apps/server`: Fastify ingest API with in-memory storage plus JSONL append.
 - `apps/dashboard`: Vite React dashboard for decoded events and reward stats.
@@ -96,6 +97,46 @@ signal.outcome.record({
   }
 });
 ```
+
+## Optional Game Signals
+
+SignalKit can support games without becoming a replay or heatmap SDK. Use `@signalkit/plugin-game` for semantic gameplay events and compact input summaries:
+
+```ts
+import { gamePlugin } from "@signalkit/plugin-game";
+
+const signal = SignalKit.init({
+  // ...
+  plugins: [gamePlugin()],
+  transport
+});
+
+signal.game.action({
+  playerId: "player_123",
+  action: "jump",
+  target: "moving_platform",
+  outcome: "failure",
+  reward: -0.2,
+  metadata: {
+    level: "level_2",
+    attempt: 4,
+    distanceToTarget: 12
+  }
+});
+
+signal.game.inputSummary({
+  playerId: "player_123",
+  taskId: "level_2_attempt_5",
+  windowMs: 10000,
+  taps: 18,
+  doubleTaps: 3,
+  drags: 4,
+  misclicks: 2,
+  rageClicks: 1
+});
+```
+
+The game plugin does not auto-capture pointer paths, touch trails, DOM state, canvas frames, or recordings. Developers emit the compact summaries they actually want to own.
 
 ## Custom Transport
 

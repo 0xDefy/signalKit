@@ -100,6 +100,44 @@ function encodePayload(
     ];
   }
 
+  if (event.type === "game_action") {
+    return [
+      payload.playerId,
+      payload.taskId,
+      payload.action,
+      payload.target,
+      payload.outcome,
+      encodeRatio(payload.reward),
+      encodeMetadata(payload.metadata, metadataKeys)
+    ];
+  }
+
+  if (event.type === "game_level") {
+    return [
+      payload.playerId,
+      payload.level,
+      payload.attempt,
+      payload.outcome,
+      encodeRatio(payload.reward),
+      encodeMetadata(payload.metadata, metadataKeys)
+    ];
+  }
+
+  if (event.type === "game_input_summary") {
+    return [
+      payload.playerId,
+      payload.taskId,
+      payload.windowMs,
+      payload.taps,
+      payload.doubleTaps,
+      payload.longPresses,
+      payload.drags,
+      payload.misclicks,
+      payload.rageClicks,
+      encodeMetadata(payload.metadata, metadataKeys)
+    ];
+  }
+
   const keys = Object.keys(payload);
   dictionary.payloadKeys = { ...dictionary.payloadKeys, [event.type]: keys };
   return keys.map((key) => payload[key]);

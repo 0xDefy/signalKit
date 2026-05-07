@@ -64,6 +64,44 @@ function decodePayload(type: string, payload: unknown[], dictionary: CompactDict
     };
   }
 
+  if (type === "game_action") {
+    return {
+      playerId: payload[0],
+      taskId: payload[1],
+      action: payload[2],
+      target: payload[3],
+      outcome: payload[4],
+      reward: decodeRatio(payload[5]),
+      metadata: decodeMetadata(payload[6], dictionary.metadata ?? [])
+    };
+  }
+
+  if (type === "game_level") {
+    return {
+      playerId: payload[0],
+      level: payload[1],
+      attempt: payload[2],
+      outcome: payload[3],
+      reward: decodeRatio(payload[4]),
+      metadata: decodeMetadata(payload[5], dictionary.metadata ?? [])
+    };
+  }
+
+  if (type === "game_input_summary") {
+    return {
+      playerId: payload[0],
+      taskId: payload[1],
+      windowMs: payload[2],
+      taps: payload[3],
+      doubleTaps: payload[4],
+      longPresses: payload[5],
+      drags: payload[6],
+      misclicks: payload[7],
+      rageClicks: payload[8],
+      metadata: decodeMetadata(payload[9], dictionary.metadata ?? [])
+    };
+  }
+
   const keys = dictionary.payloadKeys?.[type] ?? [];
   return Object.fromEntries(keys.map((key, index) => [key, payload[index]]));
 }

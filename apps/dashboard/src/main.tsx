@@ -142,7 +142,7 @@ function Dashboard() {
             each batch with its dictionary so dashboards, evaluation exports, and developer-owned
             analytics can read normal JSON again.
           </p>
-          <code>{"fb -> feedback, as -> agent_step, oc -> outcome"}</code>
+          <code>{"fb -> feedback, as -> agent_step, oc -> outcome, ga/gl/gi -> game summaries"}</code>
           <div className="exportBox">
             <h2>Developer-owned export</h2>
             <p>
