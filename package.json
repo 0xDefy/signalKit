@@ -1,0 +1,18 @@
+{
+  "name": "signalkit-monorepo",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev:server": "pnpm --filter @signalkit/core --filter @signalkit/plugin-feedback --filter @signalkit/plugin-agent --filter @signalkit/plugin-outcome --filter @signalkit/transport-fetch build && pnpm --filter @signalkit/server dev",
+    "dev:dashboard": "pnpm --filter @signalkit/dashboard dev",
+    "dev:example": "pnpm --filter @signalkit/core --filter @signalkit/plugin-feedback --filter @signalkit/plugin-agent --filter @signalkit/plugin-outcome --filter @signalkit/transport-fetch build && pnpm --filter @signalkit/example-react dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm --filter @signalkit/core --filter @signalkit/plugin-feedback --filter @signalkit/plugin-agent --filter @signalkit/plugin-outcome --filter @signalkit/transport-fetch build && pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.12",
+    "typescript": "^5.4.5"
+  },
+  "packageManager": "pnpm@9.1.0"
+}
