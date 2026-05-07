@@ -1,11 +1,9 @@
 export { SignalKit, SignalKitClient } from "./client.js";
 export {
-  decodeBatchEvents,
-  decodeCompactBatch,
   encodeCompactBatch,
-  encodeReadableBatch,
-  schemaRegistry
+  encodeReadableBatch
 } from "./encoding.js";
+export { schemaRegistry } from "./schema.js";
 export type {
   CompactBatch,
   CompactDictionary,

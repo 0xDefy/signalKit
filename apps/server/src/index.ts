@@ -1,5 +1,6 @@
 import cors from "@fastify/cors";
-import { decodeBatchEvents, type DecodedEvent, type EncodedBatch } from "@signalkit/core";
+import { type DecodedEvent, type EncodedBatch } from "@signalkit/core";
+import { decodeBatchEvents } from "@signalkit/core/decoder";
 import Fastify from "fastify";
 import { mkdir, readFile, appendFile } from "node:fs/promises";
 import { dirname, join } from "node:path";

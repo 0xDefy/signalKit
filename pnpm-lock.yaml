@@ -106,41 +106,37 @@ importers:
         version: 5.9.3
 
   packages/plugin-agent:
-    dependencies:
+    devDependencies:
       '@signalkit/core':
         specifier: workspace:*
         version: link:../core
-    devDependencies:
       typescript:
         specifier: ^5.4.5
         version: 5.9.3
 
   packages/plugin-feedback:
-    dependencies:
+    devDependencies:
       '@signalkit/core':
         specifier: workspace:*
         version: link:../core
-    devDependencies:
       typescript:
         specifier: ^5.4.5
         version: 5.9.3
 
   packages/plugin-outcome:
-    dependencies:
+    devDependencies:
       '@signalkit/core':
         specifier: workspace:*
         version: link:../core
-    devDependencies:
       typescript:
         specifier: ^5.4.5
         version: 5.9.3
 
   packages/transport-fetch:
-    dependencies:
+    devDependencies:
       '@signalkit/core':
         specifier: workspace:*
         version: link:../core
-    devDependencies:
       typescript:
         specifier: ^5.4.5
         version: 5.9.3

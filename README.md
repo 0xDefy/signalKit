@@ -128,7 +128,7 @@ Readable mode sends normal JSON for debugging. Compact mode sends shorter keys a
 }
 ```
 
-Rewards and ratio-like fields such as `editDistance` are scaled from `0..1` to `0..100` when possible. The dictionary lets the server or dashboard decode compact batches back into readable events. `decodeCompactBatch()` is exported from `@signalkit/core`.
+Rewards and ratio-like fields such as `editDistance` are scaled from `0..1` to `0..100` when possible. The dictionary lets the server or dashboard decode compact batches back into readable events. `decodeCompactBatch()` is exported from `@signalkit/core/decoder` so apps that only send events do not need to import decoder code.
 
 ## Roadmap
 

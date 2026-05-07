@@ -2,49 +2,10 @@ import type {
   CompactBatch,
   CompactDictionary,
   CompactEvent,
-  DecodedEvent,
-  EncodedBatch,
   ReadableBatch,
   SignalEvent
 } from "./types.js";
-
-const EVENT_TYPE_CODES: Record<string, string> = {
-  feedback: "fb",
-  agent_step: "as",
-  outcome: "oc",
-  custom: "cu"
-};
-
-const ACTION_CODES: Record<string, number> = {
-  accepted: 1,
-  rejected: 2,
-  edited_then_accepted: 3,
-  regenerated: 4,
-  copied: 5,
-  shared: 6,
-  abandoned: 7,
-  custom: 8
-};
-
-const STATUS_CODES: Record<string, number> = {
-  success: 1,
-  failure: 2,
-  partial: 3,
-  skipped: 4
-};
-
-const OUTCOME_CODES: Record<string, number> = {
-  completed: 1,
-  failed: 2,
-  abandoned: 3,
-  converted: 4,
-  retained: 5,
-  custom: 6
-};
-
-const CODE_TO_ACTION = reverseNumberMap(ACTION_CODES);
-const CODE_TO_STATUS = reverseNumberMap(STATUS_CODES);
-const CODE_TO_OUTCOME = reverseNumberMap(OUTCOME_CODES);
+import { ACTION_CODES, encodeRatio, EVENT_TYPE_CODES, OUTCOME_CODES, STATUS_CODES } from "./schema.js";
 
 export function encodeReadableBatch(args: {
   appId: string;
@@ -91,38 +52,6 @@ export function encodeCompactBatch(args: {
     e: events,
     d: pruneDictionary(dictionary)
   };
-}
-
-export function decodeCompactBatch(batch: EncodedBatch): ReadableBatch {
-  if ("events" in batch) return batch;
-
-  const events: SignalEvent[] = batch.e.map(([typeCode, timestamp, payload]) => {
-    const type = batch.d.eventTypes[typeCode] ?? typeCode;
-    return {
-      type,
-      timestamp,
-      sessionId: batch.s,
-      payload: decodePayload(type, payload, batch.d)
-    };
-  });
-
-  return {
-    v: 1,
-    appId: batch.a,
-    publicKey: batch.k,
-    sessionId: batch.s,
-    events
-  };
-}
-
-export function decodeBatchEvents(batch: EncodedBatch): DecodedEvent[] {
-  const readable = decodeCompactBatch(batch);
-  return readable.events.map((event) => ({
-    ...event,
-    appId: readable.appId,
-    publicKey: readable.publicKey,
-    sessionId: event.sessionId || readable.sessionId
-  }));
 }
 
 function encodePayload(
@@ -176,41 +105,6 @@ function encodePayload(
   return keys.map((key) => payload[key]);
 }
 
-function decodePayload(type: string, payload: unknown[], dictionary: CompactDictionary): Record<string, unknown> {
-  if (type === "feedback") {
-    return {
-      task: payload[0],
-      outputId: payload[1],
-      action: dictionary.actions?.[String(payload[2])] ?? payload[2],
-      reward: decodeRatio(payload[3]),
-      metadata: decodeMetadata(payload[4], dictionary.metadata ?? [])
-    };
-  }
-
-  if (type === "agent_step") {
-    return {
-      taskId: payload[0],
-      step: payload[1],
-      tool: payload[2],
-      status: dictionary.statuses?.[String(payload[3])] ?? payload[3],
-      reward: decodeRatio(payload[4]),
-      metadata: decodeMetadata(payload[5], dictionary.metadata ?? [])
-    };
-  }
-
-  if (type === "outcome") {
-    return {
-      taskId: payload[0],
-      outcome: dictionary.outcomes?.[String(payload[1])] ?? payload[1],
-      reward: decodeRatio(payload[2]),
-      metadata: decodeMetadata(payload[3], dictionary.metadata ?? [])
-    };
-  }
-
-  const keys = dictionary.payloadKeys?.[type] ?? [];
-  return Object.fromEntries(keys.map((key, index) => [key, payload[index]]));
-}
-
 function encodeMetadata(value: unknown, metadataKeys: string[]): unknown[] | undefined {
   if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
   const metadata = value as Record<string, unknown>;
@@ -221,44 +115,11 @@ function encodeMetadata(value: unknown, metadataKeys: string[]): unknown[] | und
     .map((key) => encodeMetadataValue(key, metadata[key]));
 }
 
-function decodeMetadata(value: unknown, keys: string[]): Record<string, unknown> | undefined {
-  if (!Array.isArray(value)) return undefined;
-  const decoded: Record<string, unknown> = {};
-  value.forEach((item, index) => {
-    const key = keys[index];
-    if (key) decoded[key] = decodeMetadataValue(key, item);
-  });
-  return decoded;
-}
-
 function encodeMetadataValue(key: string, value: unknown): unknown {
   if ((key === "editDistance" || key.toLowerCase().endsWith("rate")) && typeof value === "number") {
     return encodeRatio(value);
   }
   return value;
-}
-
-function decodeMetadataValue(key: string, value: unknown): unknown {
-  if ((key === "editDistance" || key.toLowerCase().endsWith("rate")) && typeof value === "number") {
-    return decodeRatio(value);
-  }
-  return value;
-}
-
-function encodeRatio(value: unknown): unknown {
-  if (typeof value !== "number") return value;
-  if (value >= 0 && value <= 1) return Math.round(value * 100);
-  return value;
-}
-
-function decodeRatio(value: unknown): unknown {
-  if (typeof value !== "number") return value;
-  if (Number.isInteger(value) && value >= 0 && value <= 100) return value / 100;
-  return value;
-}
-
-function reverseNumberMap(map: Record<string, number>): Record<string, string> {
-  return Object.fromEntries(Object.entries(map).map(([key, value]) => [String(value), key]));
 }
 
 function pruneDictionary(dictionary: CompactDictionary): CompactDictionary {
@@ -292,13 +153,3 @@ function findLastDefinedMetadataIndex(metadata: Record<string, unknown>, keys: s
   }
   return -1;
 }
-
-export const schemaRegistry = {
-  eventTypeCodes: EVENT_TYPE_CODES,
-  actionCodes: ACTION_CODES,
-  statusCodes: STATUS_CODES,
-  outcomeCodes: OUTCOME_CODES,
-  codeToAction: CODE_TO_ACTION,
-  codeToStatus: CODE_TO_STATUS,
-  codeToOutcome: CODE_TO_OUTCOME
-} as const;
