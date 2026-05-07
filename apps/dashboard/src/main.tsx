@@ -60,6 +60,9 @@ function Dashboard() {
           <a href={`${api}/v1/export.jsonl`} download>
             Export JSONL
           </a>
+          <a href={`${api}/v1/export.compact.jsonl.gz`} download>
+            Export Compact Gzip
+          </a>
           <button onClick={() => void refresh()}>Refresh</button>
         </div>
       </header>
@@ -155,6 +158,15 @@ function Dashboard() {
               </a>
               <a href={`${api}/v1/export.jsonl`} download>
                 Download JSONL
+              </a>
+              <a href={`${api}/v1/export.jsonl.gz`} download>
+                JSONL Gzip
+              </a>
+              <a href={`${api}/v1/export.compact.jsonl`} download>
+                Compact JSONL
+              </a>
+              <a href={`${api}/v1/export.compact.jsonl.gz`} download>
+                Compact Gzip
               </a>
             </div>
           </div>

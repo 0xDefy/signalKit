@@ -35,3 +35,4 @@ Thumbs.db
 
 # SignalKit local server data
 apps/server/data/events.jsonl
+apps/server/data/batches.compact.jsonl

@@ -31,6 +31,9 @@ The MVP server keeps developer-owned data easy to pull out:
 
 - `GET http://localhost:8787/v1/export.json` downloads all decoded events as one JSON document.
 - `GET http://localhost:8787/v1/export.jsonl` downloads all decoded events as JSONL for datasets, warehouses, eval pipelines, or fine-tuning prep.
+- `GET http://localhost:8787/v1/export.jsonl.gz` downloads the decoded JSONL export compressed with gzip.
+- `GET http://localhost:8787/v1/export.compact.jsonl` downloads the original compact batches exactly as ingested.
+- `GET http://localhost:8787/v1/export.compact.jsonl.gz` downloads the compact batch archive compressed with gzip.
 
 The dashboard also has JSON and JSONL export buttons.
 

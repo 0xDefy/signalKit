@@ -1,10 +1,11 @@
 import cors from "@fastify/cors";
 import { type DecodedEvent, type EncodedBatch } from "@signalkit/core";
 import { decodeBatchEvents } from "@signalkit/core/decoder";
-import Fastify from "fastify";
+import Fastify, { type FastifyReply } from "fastify";
 import { mkdir, readFile, appendFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { gzipSync } from "node:zlib";
 
 type StoredEvent = DecodedEvent & {
   receivedAt: number;
@@ -13,6 +14,7 @@ type StoredEvent = DecodedEvent & {
 const app = Fastify({ logger: true });
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const dataFile = join(__dirname, "..", "data", "events.jsonl");
+const compactBatchFile = join(__dirname, "..", "data", "batches.compact.jsonl");
 const events: StoredEvent[] = [];
 
 await mkdir(dirname(dataFile), { recursive: true });
@@ -30,7 +32,7 @@ app.post("/v1/ingest", async (request, reply) => {
     const stored = valid.map((event) => ({ ...event, receivedAt: now }));
 
     events.push(...stored);
-    await appendEvents(stored);
+    await Promise.all([appendEvents(stored), appendCompactBatch(batch, now)]);
 
     return { ok: true, received: stored.length };
   } catch (error) {
@@ -61,6 +63,23 @@ app.get("/v1/export.jsonl", async (_request, reply) => {
     .header("content-type", "application/x-ndjson; charset=utf-8")
     .header("content-disposition", `attachment; filename="${createExportName("jsonl")}"`)
     .send(body ? `${body}\n` : "");
+});
+
+app.get("/v1/export.jsonl.gz", async (_request, reply) => {
+  const body = events.map((event) => JSON.stringify(event)).join("\n");
+  return sendGzip(reply, body ? `${body}\n` : "", "jsonl.gz", "application/x-ndjson");
+});
+
+app.get("/v1/export.compact.jsonl", async (_request, reply) => {
+  return reply
+    .header("content-type", "application/x-ndjson; charset=utf-8")
+    .header("content-disposition", `attachment; filename="${createExportName("compact.jsonl")}"`)
+    .send(await readOptionalFile(compactBatchFile));
+});
+
+app.get("/v1/export.compact.jsonl.gz", async (_request, reply) => {
+  const body = await readOptionalFile(compactBatchFile);
+  return sendGzip(reply, body, "compact.jsonl.gz", "application/x-ndjson");
 });
 
 app.get("/v1/stats", async () => {
@@ -118,6 +137,32 @@ async function appendEvents(stored: StoredEvent[]): Promise<void> {
   await appendFile(dataFile, lines, "utf8");
 }
 
+async function appendCompactBatch(batch: EncodedBatch, receivedAt: number): Promise<void> {
+  const line = JSON.stringify({ receivedAt, batch });
+  await appendFile(compactBatchFile, `${line}\n`, "utf8");
+}
+
+async function readOptionalFile(path: string): Promise<string> {
+  try {
+    return await readFile(path, "utf8");
+  } catch {
+    return "";
+  }
+}
+
+function sendGzip(
+  reply: FastifyReply,
+  body: string,
+  extension: "jsonl.gz" | "compact.jsonl.gz",
+  contentType: string
+) {
+  return reply
+    .header("content-type", contentType)
+    .header("content-encoding", "gzip")
+    .header("content-disposition", `attachment; filename="${createExportName(extension)}"`)
+    .send(gzipSync(body));
+}
+
 function isValidEvent(event: unknown): event is StoredEvent {
   if (!event || typeof event !== "object") return false;
   const candidate = event as Partial<StoredEvent>;
@@ -130,7 +175,7 @@ function isValidEvent(event: unknown): event is StoredEvent {
   );
 }
 
-function createExportName(extension: "json" | "jsonl"): string {
+function createExportName(extension: "json" | "jsonl" | "jsonl.gz" | "compact.jsonl" | "compact.jsonl.gz"): string {
   const stamp = new Date().toISOString().replace(/[:.]/g, "-");
   return `signalkit-events-${stamp}.${extension}`;
 }
