@@ -213,6 +213,27 @@ function Dashboard() {
               </a>
             </div>
           </div>
+          <div className="exportBox">
+            <h2>Dataset presets</h2>
+            <p>
+              Presets reshape decoded events into rows for AI, agent, feedback, and game workflows.
+              Active filters apply to decoded preset downloads.
+            </p>
+            <div className="exportLinks">
+              <a href={`${api}/v1/datasets/reward-modeling.jsonl.gz${exportQuery}`} download>
+                Reward Modeling
+              </a>
+              <a href={`${api}/v1/datasets/feedback-evals.jsonl.gz${exportQuery}`} download>
+                Feedback Evals
+              </a>
+              <a href={`${api}/v1/datasets/agent-steps.jsonl.gz${exportQuery}`} download>
+                Agent Steps
+              </a>
+              <a href={`${api}/v1/datasets/game-balancing.jsonl.gz${exportQuery}`} download>
+                Game Balancing
+              </a>
+            </div>
+          </div>
         </div>
       </section>
     </main>

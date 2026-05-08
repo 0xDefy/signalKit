@@ -40,6 +40,13 @@ export type CompactDictionary = {
 
 export type EncodedBatch = ReadableBatch | CompactBatch;
 
+export type SignalPreview = {
+  event: SignalEvent;
+  encodedBatch: EncodedBatch;
+  privacy: PrivacyMode;
+  schemaMode: SchemaMode;
+};
+
 export type SignalKitTransport = {
   send(batch: EncodedBatch): Promise<void>;
 };

@@ -25,6 +25,8 @@ type EventFilters = {
   limit?: number;
 };
 
+type DatasetPreset = "reward-modeling" | "feedback-evals" | "agent-steps" | "game-balancing";
+
 const maxStoredEvents = readEnvInt("SIGNALKIT_MAX_STORED_EVENTS", 100000);
 const app = Fastify({ logger: true, bodyLimit: readEnvInt("SIGNALKIT_BODY_LIMIT_BYTES", 262144) });
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -103,6 +105,46 @@ app.get("/v1/export.compact.jsonl", async (_request, reply) => {
 app.get("/v1/export.compact.jsonl.gz", async (_request, reply) => {
   const body = await readOptionalFile(compactBatchFile);
   return sendGzip(reply, body, "compact.jsonl.gz", "application/x-ndjson");
+});
+
+app.get("/v1/datasets", async () => ({
+  presets: [
+    {
+      id: "reward-modeling",
+      description: "Rows with task/output/action/outcome/reward for reward modeling or preference learning."
+    },
+    {
+      id: "feedback-evals",
+      description: "Feedback-only rows for eval datasets and AI output quality analysis."
+    },
+    {
+      id: "agent-steps",
+      description: "Agent step rows with tool/status/reward for automation evaluation."
+    },
+    {
+      id: "game-balancing",
+      description: "Game action, level, and input summary rows for balancing and session analysis."
+    }
+  ]
+}));
+
+app.get("/v1/datasets/:preset.jsonl", async (request, reply) => {
+  const preset = readPreset((request.params as { preset?: string }).preset);
+  if (!preset) return reply.code(404).send({ ok: false, error: "Unknown dataset preset" });
+
+  const rows = createDatasetRows(preset, applyFilters(events, parseFilters(request.query)));
+  return reply
+    .header("content-type", "application/x-ndjson; charset=utf-8")
+    .header("content-disposition", `attachment; filename="${createDatasetName(preset, "jsonl")}"`)
+    .send(toDatasetJsonl(rows));
+});
+
+app.get("/v1/datasets/:preset.jsonl.gz", async (request, reply) => {
+  const preset = readPreset((request.params as { preset?: string }).preset);
+  if (!preset) return reply.code(404).send({ ok: false, error: "Unknown dataset preset" });
+
+  const rows = createDatasetRows(preset, applyFilters(events, parseFilters(request.query)));
+  return sendDatasetGzip(reply, toDatasetJsonl(rows), preset);
 });
 
 app.get("/v1/stats", async () => {
@@ -185,6 +227,129 @@ function sendGzip(
     .header("content-encoding", "gzip")
     .header("content-disposition", `attachment; filename="${createExportName(extension)}"`)
     .send(gzipSync(body));
+}
+
+function sendDatasetGzip(reply: FastifyReply, body: string, preset: DatasetPreset) {
+  return reply
+    .header("content-type", "application/x-ndjson")
+    .header("content-encoding", "gzip")
+    .header("content-disposition", `attachment; filename="${createDatasetName(preset, "jsonl.gz")}"`)
+    .send(gzipSync(body));
+}
+
+function readPreset(value: unknown): DatasetPreset | undefined {
+  if (
+    value === "reward-modeling" ||
+    value === "feedback-evals" ||
+    value === "agent-steps" ||
+    value === "game-balancing"
+  ) {
+    return value;
+  }
+  return undefined;
+}
+
+function createDatasetRows(preset: DatasetPreset, filteredEvents: StoredEvent[]): Record<string, unknown>[] {
+  if (preset === "reward-modeling") return createRewardRows(filteredEvents);
+  if (preset === "feedback-evals") return createFeedbackRows(filteredEvents);
+  if (preset === "agent-steps") return createAgentRows(filteredEvents);
+  return createGameRows(filteredEvents);
+}
+
+function createRewardRows(filteredEvents: StoredEvent[]): Record<string, unknown>[] {
+  return filteredEvents
+    .filter((event) => typeof event.payload.reward === "number")
+    .map((event) => ({
+      id: event.payload.outputId ?? event.payload.taskId ?? `${event.sessionId}:${event.timestamp}`,
+      type: event.type,
+      appId: event.appId,
+      sessionId: event.sessionId,
+      userId: event.userId,
+      anonymousId: event.anonymousId,
+      timestamp: event.timestamp,
+      task: event.payload.task,
+      taskId: event.payload.taskId,
+      outputId: event.payload.outputId,
+      action: event.payload.action,
+      outcome: event.payload.outcome,
+      reward: event.payload.reward,
+      metadata: event.payload.metadata
+    }));
+}
+
+function createFeedbackRows(filteredEvents: StoredEvent[]): Record<string, unknown>[] {
+  return filteredEvents
+    .filter((event) => event.type === "feedback")
+    .map((event) => ({
+      id: event.payload.outputId ?? `${event.sessionId}:${event.timestamp}`,
+      appId: event.appId,
+      sessionId: event.sessionId,
+      userId: event.userId,
+      anonymousId: event.anonymousId,
+      timestamp: event.timestamp,
+      task: event.payload.task,
+      outputId: event.payload.outputId,
+      action: event.payload.action,
+      reward: event.payload.reward,
+      metadata: event.payload.metadata
+    }));
+}
+
+function createAgentRows(filteredEvents: StoredEvent[]): Record<string, unknown>[] {
+  return filteredEvents
+    .filter((event) => event.type === "agent_step")
+    .map((event) => ({
+      id: `${event.payload.taskId ?? event.sessionId}:${event.payload.step ?? event.timestamp}`,
+      appId: event.appId,
+      sessionId: event.sessionId,
+      userId: event.userId,
+      anonymousId: event.anonymousId,
+      timestamp: event.timestamp,
+      taskId: event.payload.taskId,
+      step: event.payload.step,
+      tool: event.payload.tool,
+      status: event.payload.status,
+      reward: event.payload.reward,
+      metadata: event.payload.metadata
+    }));
+}
+
+function createGameRows(filteredEvents: StoredEvent[]): Record<string, unknown>[] {
+  return filteredEvents
+    .filter((event) => event.type === "game_action" || event.type === "game_level" || event.type === "game_input_summary")
+    .map((event) => ({
+      id: `${event.payload.playerId ?? event.sessionId}:${event.payload.taskId ?? event.payload.level ?? event.timestamp}`,
+      type: event.type,
+      appId: event.appId,
+      sessionId: event.sessionId,
+      userId: event.userId,
+      anonymousId: event.anonymousId,
+      timestamp: event.timestamp,
+      playerId: event.payload.playerId,
+      taskId: event.payload.taskId,
+      action: event.payload.action,
+      target: event.payload.target,
+      level: event.payload.level,
+      attempt: event.payload.attempt,
+      outcome: event.payload.outcome,
+      reward: event.payload.reward,
+      windowMs: event.payload.windowMs,
+      taps: event.payload.taps,
+      doubleTaps: event.payload.doubleTaps,
+      drags: event.payload.drags,
+      misclicks: event.payload.misclicks,
+      rageClicks: event.payload.rageClicks,
+      metadata: event.payload.metadata
+    }));
+}
+
+function toDatasetJsonl(rows: Record<string, unknown>[]): string {
+  const body = rows.map((row) => JSON.stringify(removeUndefined(row))).join("\n");
+  return body ? `${body}\n` : "";
+}
+
+function removeUndefined(row: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(row).filter(([, value]) => value !== undefined));
 }
 
 function parseFilters(query: unknown): EventFilters {
@@ -287,4 +452,9 @@ function isValidEvent(event: unknown): event is StoredEvent {
 function createExportName(extension: "json" | "jsonl" | "jsonl.gz" | "compact.jsonl" | "compact.jsonl.gz"): string {
   const stamp = new Date().toISOString().replace(/[:.]/g, "-");
   return `signalkit-events-${stamp}.${extension}`;
+}
+
+function createDatasetName(preset: DatasetPreset, extension: "jsonl" | "jsonl.gz"): string {
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+  return `signalkit-${preset}-${stamp}.${extension}`;
 }

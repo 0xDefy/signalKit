@@ -1,4 +1,4 @@
-import { SignalKit, type EncodedBatch, type SignalKitClient } from "@signalkit/core";
+import { SignalKit, type EncodedBatch, type SignalKitClient, type SignalPreview } from "@signalkit/core";
 import { agentPlugin, type AgentApi } from "@signalkit/plugin-agent";
 import { feedbackPlugin, type FeedbackApi } from "@signalkit/plugin-feedback";
 import { gamePlugin, type GameApi } from "@signalkit/plugin-game";
@@ -246,6 +246,7 @@ function ExampleApp() {
   const [latestEvents, setLatestEvents] = useState<ServerEvent[]>([]);
   const [serverStatus, setServerStatus] = useState("Not checked");
   const [sendCount, setSendCount] = useState(0);
+  const [preview, setPreview] = useState<SignalPreview | null>(null);
 
   const signal = useMemo(
     () =>
@@ -265,6 +266,25 @@ function ExampleApp() {
     scenario.run(signal);
     setQueueSize(signal.getQueueSize());
     setStatus(`Queued: ${scenario.title}`);
+  }
+
+  function previewPrivacy() {
+    setPreview(
+      signal.preview("feedback", {
+        task: "summarize_support_email",
+        outputId: "out_private",
+        action: "rejected",
+        reward: 0.35,
+        metadata: {
+          language: "en",
+          Email: "customer@example.com",
+          TEXT: "My private account number is 12345",
+          ApiKey: "sk_secret_value",
+          outputLength: 420
+        }
+      })
+    );
+    setStatus("Preview generated without queueing an event");
   }
 
   async function flush() {
@@ -344,6 +364,7 @@ function ExampleApp() {
           <h2>Server</h2>
           <button onClick={() => void checkHealth()}>Check health</button>
           <button onClick={() => void refreshServerEvents()}>Load decoded</button>
+          <button onClick={previewPrivacy}>Preview privacy</button>
         </div>
       </section>
 
@@ -367,10 +388,20 @@ function ExampleApp() {
       </section>
 
       <section className="split">
+        <Panel title="Privacy preview" detail={preview ? `${preview.privacy} / ${preview.schemaMode}` : "No preview yet"}>
+          <pre>
+            {preview
+              ? JSON.stringify(preview, null, 2)
+              : "Click Preview privacy to see redaction and encoding without sending data."}
+          </pre>
+        </Panel>
+
         <Panel title="Transport payload" detail={status}>
           <pre>{lastBatch ? JSON.stringify(lastBatch, null, 2) : "No batch sent yet. Queue a scenario and flush."}</pre>
         </Panel>
+      </section>
 
+      <section className="split">
         <Panel title="Server decoded events" detail={serverStatus}>
           <div className="eventList">
             {latestEvents.length === 0 ? <p>No decoded events loaded.</p> : null}

@@ -5,7 +5,8 @@ import type {
   RequiredSignalKitConfig,
   SignalEvent,
   SignalKitConfig,
-  SignalKitPluginContext
+  SignalKitPluginContext,
+  SignalPreview
 } from "./types.js";
 
 type ClientApi = Record<string, unknown>;
@@ -29,18 +30,7 @@ export class SignalKitClient {
 
   emit(type: string, payload: Record<string, unknown>): void {
     if (!shouldSample(this.config.sampleRate)) return;
-
-    const event: SignalEvent = {
-      type,
-      timestamp: Date.now(),
-      sessionId: this.config.sessionId,
-      userId: sanitizeUserId(this.config.userId, this.config.privacy),
-      anonymousId: this.config.anonymousId,
-      payload: sanitizePayload(payload, this.config.privacy) as Record<string, unknown>
-    };
-
-    if (event.userId === undefined) delete event.userId;
-    if (!event.anonymousId) delete event.anonymousId;
+    const event = this.createEvent(type, payload);
 
     if (this.queue.length >= this.config.maxQueueSize) {
       this.queue.shift();
@@ -52,6 +42,16 @@ export class SignalKitClient {
     if (this.queue.length >= this.config.maxBatchSize) {
       void this.flush();
     }
+  }
+
+  preview(type: string, payload: Record<string, unknown>): SignalPreview {
+    const event = this.createEvent(type, payload);
+    return {
+      event,
+      encodedBatch: this.encode([event]),
+      privacy: this.config.privacy,
+      schemaMode: this.config.schemaMode
+    };
   }
 
   async flush(): Promise<void> {
@@ -108,6 +108,21 @@ export class SignalKitClient {
         Object.assign(this as ClientApi, api);
       }
     }
+  }
+
+  private createEvent(type: string, payload: Record<string, unknown>): SignalEvent {
+    const event: SignalEvent = {
+      type,
+      timestamp: Date.now(),
+      sessionId: this.config.sessionId,
+      userId: sanitizeUserId(this.config.userId, this.config.privacy),
+      anonymousId: this.config.anonymousId,
+      payload: sanitizePayload(payload, this.config.privacy) as Record<string, unknown>
+    };
+
+    if (event.userId === undefined) delete event.userId;
+    if (!event.anonymousId) delete event.anonymousId;
+    return event;
   }
 
   private trimQueue(): void {

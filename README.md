@@ -61,6 +61,21 @@ curl "http://localhost:8787/v1/export.jsonl.gz?type=feedback&minReward=0.8"
 
 Compact archive exports intentionally remain unfiltered because they preserve original received batches for storage and audit.
 
+## Dataset Presets
+
+Preset exports reshape decoded events into AI- and product-workflow rows:
+
+- `GET http://localhost:8787/v1/datasets/reward-modeling.jsonl.gz`
+- `GET http://localhost:8787/v1/datasets/feedback-evals.jsonl.gz`
+- `GET http://localhost:8787/v1/datasets/agent-steps.jsonl.gz`
+- `GET http://localhost:8787/v1/datasets/game-balancing.jsonl.gz`
+
+They support the same decoded export filters:
+
+```bash
+curl "http://localhost:8787/v1/datasets/reward-modeling.jsonl.gz?minReward=0.8&type=feedback"
+```
+
 ## Packages
 
 - `@signalkit/core`: SDK client, plugin system, queue, privacy scrubber, compact/readable encoding, decoder, custom transport interface.
@@ -164,6 +179,30 @@ signal.game.inputSummary({
 ```
 
 The game plugin does not auto-capture pointer paths, touch trails, DOM state, canvas frames, or recordings. Developers emit the compact summaries they actually want to own.
+
+## Privacy Preview
+
+Developers can inspect what SignalKit would send before queueing an event:
+
+```ts
+const preview = signal.preview("feedback", {
+  task: "summarize_support_email",
+  outputId: "out_private",
+  action: "rejected",
+  reward: 0.35,
+  metadata: {
+    Email: "customer@example.com",
+    TEXT: "Private support message",
+    ApiKey: "sk_secret_value",
+    language: "en"
+  }
+});
+
+console.log(preview.event.payload);
+console.log(preview.encodedBatch);
+```
+
+`preview()` applies the active privacy mode and schema mode but does not enqueue or send anything.
 
 ## Custom Transport
 

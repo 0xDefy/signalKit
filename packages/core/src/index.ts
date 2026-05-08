@@ -17,5 +17,6 @@ export type {
   SignalKitConfig,
   SignalKitPlugin,
   SignalKitPluginContext,
-  SignalKitTransport
+  SignalKitTransport,
+  SignalPreview
 } from "./types.js";
