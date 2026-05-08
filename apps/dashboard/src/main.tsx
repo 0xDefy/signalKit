@@ -25,12 +25,19 @@ function Dashboard() {
   const [events, setEvents] = useState<EventRow[]>([]);
   const [selected, setSelected] = useState<EventRow | null>(null);
   const [status, setStatus] = useState("Ready");
+  const [typeFilter, setTypeFilter] = useState("");
+  const [sessionFilter, setSessionFilter] = useState("");
+  const [taskFilter, setTaskFilter] = useState("");
+  const [minReward, setMinReward] = useState("");
+  const [maxReward, setMaxReward] = useState("");
+  const [limit, setLimit] = useState("100");
 
   async function refresh() {
     setStatus("Refreshing");
+    const query = buildQuery();
     const [statsResponse, eventsResponse] = await Promise.all([
       fetch(`${api}/v1/stats`),
-      fetch(`${api}/v1/events`)
+      fetch(`${api}/v1/events${query}`)
     ]);
     const nextStats = (await statsResponse.json()) as Stats;
     const nextEvents = ((await eventsResponse.json()) as { events: EventRow[] }).events;
@@ -45,6 +52,7 @@ function Dashboard() {
   }, []);
 
   const typeRows = useMemo(() => Object.entries(stats?.eventsByType ?? {}), [stats]);
+  const exportQuery = buildQuery();
 
   return (
     <main>
@@ -54,18 +62,53 @@ function Dashboard() {
           <p>Feedback, outcome, and reward signals decoded from compact SDK batches.</p>
         </div>
         <div className="headerActions">
-          <a href={`${api}/v1/export.json`} download>
+          <a href={`${api}/v1/export.json${exportQuery}`} download>
             Export JSON
           </a>
-          <a href={`${api}/v1/export.jsonl`} download>
+          <a href={`${api}/v1/export.jsonl${exportQuery}`} download>
             Export JSONL
           </a>
-          <a href={`${api}/v1/export.compact.jsonl.gz`} download>
-            Export Compact Gzip
+          <a href={`${api}/v1/export.jsonl.gz${exportQuery}`} download>
+            Export Gzip
           </a>
           <button onClick={() => void refresh()}>Refresh</button>
         </div>
       </header>
+
+      <section className="filters">
+        <label>
+          <span>Type</span>
+          <select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}>
+            <option value="">All</option>
+            {typeRows.map(([type]) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          <span>Session</span>
+          <input value={sessionFilter} onChange={(event) => setSessionFilter(event.target.value)} placeholder="s_..." />
+        </label>
+        <label>
+          <span>Task</span>
+          <input value={taskFilter} onChange={(event) => setTaskFilter(event.target.value)} placeholder="task_..." />
+        </label>
+        <label>
+          <span>Min reward</span>
+          <input value={minReward} onChange={(event) => setMinReward(event.target.value)} placeholder="0" />
+        </label>
+        <label>
+          <span>Max reward</span>
+          <input value={maxReward} onChange={(event) => setMaxReward(event.target.value)} placeholder="1" />
+        </label>
+        <label>
+          <span>Limit</span>
+          <input value={limit} onChange={(event) => setLimit(event.target.value)} placeholder="100" />
+        </label>
+        <button onClick={() => void refresh()}>Apply filters</button>
+      </section>
 
       <section className="metrics">
         <Metric label="Total events" value={stats?.totalEvents ?? 0} />
@@ -153,20 +196,20 @@ function Dashboard() {
               warehouse imports, eval pipelines, and fine-tuning preparation.
             </p>
             <div className="exportLinks">
-              <a href={`${api}/v1/export.json`} download>
+              <a href={`${api}/v1/export.json${exportQuery}`} download>
                 Download JSON
               </a>
-              <a href={`${api}/v1/export.jsonl`} download>
+              <a href={`${api}/v1/export.jsonl${exportQuery}`} download>
                 Download JSONL
               </a>
-              <a href={`${api}/v1/export.jsonl.gz`} download>
+              <a href={`${api}/v1/export.jsonl.gz${exportQuery}`} download>
                 JSONL Gzip
               </a>
               <a href={`${api}/v1/export.compact.jsonl`} download>
-                Compact JSONL
+                Full Compact Archive
               </a>
               <a href={`${api}/v1/export.compact.jsonl.gz`} download>
-                Compact Gzip
+                Full Compact Gzip
               </a>
             </div>
           </div>
@@ -174,6 +217,18 @@ function Dashboard() {
       </section>
     </main>
   );
+
+  function buildQuery(): string {
+    const params = new URLSearchParams();
+    if (typeFilter) params.set("type", typeFilter);
+    if (sessionFilter.trim()) params.set("sessionId", sessionFilter.trim());
+    if (taskFilter.trim()) params.set("taskId", taskFilter.trim());
+    if (minReward.trim()) params.set("minReward", minReward.trim());
+    if (maxReward.trim()) params.set("maxReward", maxReward.trim());
+    if (limit.trim()) params.set("limit", limit.trim());
+    const query = params.toString();
+    return query ? `?${query}` : "";
+  }
 }
 
 function Metric(props: { label: string; value: number }) {

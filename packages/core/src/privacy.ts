@@ -18,7 +18,6 @@ const SECRET_KEYS = new Set([
   "passcode",
   "secret",
   "token",
-  "apiKey",
   "apikey",
   "authorization",
   "cookie"
@@ -35,8 +34,9 @@ export function sanitizeUserId(userId: string | undefined, mode: PrivacyMode): s
 }
 
 function sanitizeValue(value: unknown, mode: PrivacyMode, key: string | undefined): unknown {
-  if (key && SECRET_KEYS.has(key)) return "[redacted]";
-  if (mode !== "allow_content" && key && RAW_CONTENT_KEYS.has(key)) return "[redacted]";
+  const normalizedKey = key?.toLowerCase();
+  if (normalizedKey && SECRET_KEYS.has(normalizedKey)) return "[redacted]";
+  if (mode !== "allow_content" && normalizedKey && RAW_CONTENT_KEYS.has(normalizedKey)) return "[redacted]";
 
   if (Array.isArray(value)) {
     return value.map((item) => sanitizeValue(item, mode, undefined));

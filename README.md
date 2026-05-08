@@ -25,6 +25,8 @@ Default URLs:
 - Dashboard: `http://localhost:5174`
 - Example React app: `http://localhost:5173`
 
+The server binds to `localhost` by default so local event data and exports are not exposed on your LAN. For device testing, set `SIGNALKIT_HOST=0.0.0.0` explicitly.
+
 ## Export Data
 
 The MVP server keeps developer-owned data easy to pull out:
@@ -36,6 +38,28 @@ The MVP server keeps developer-owned data easy to pull out:
 - `GET http://localhost:8787/v1/export.compact.jsonl.gz` downloads the compact batch archive compressed with gzip.
 
 The dashboard also has JSON and JSONL export buttons.
+
+Decoded event endpoints support filters:
+
+- `type=feedback`
+- `sessionId=s_abc`
+- `taskId=task_123`
+- `appId=demo-app`
+- `userId=user_123`
+- `anonymousId=anon_123`
+- `from=2026-05-07T00:00:00.000Z` or a millisecond timestamp
+- `to=2026-05-08T00:00:00.000Z` or a millisecond timestamp
+- `minReward=0.5`
+- `maxReward=1`
+- `limit=1000`
+
+Example:
+
+```bash
+curl "http://localhost:8787/v1/export.jsonl.gz?type=feedback&minReward=0.8"
+```
+
+Compact archive exports intentionally remain unfiltered because they preserve original received batches for storage and audit.
 
 ## Packages
 
